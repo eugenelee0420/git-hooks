@@ -1,0 +1,34 @@
+#!/bin/sh
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# Redirect output to stderr.
+exec 1>&2
+
+# Check whether staged changes contain lines with "DO NOT COMMIT"
+if test $(git diff --cached -z $against | grep 'DO NOT COMMIT' | wc -l) != 0
+then
+	cat <<\EOF
+Error: Staged files contain "DO NOT COMMIT" lines!
+
+Please check your changes, or use git commit --no-verify to skip.
+EOF
+	exit 1
+fi
+
+# Check whether staged changes contain lines with "TODO"
+if test $(git diff --cached -z $against | grep 'TODO' | wc -l) != 0
+then
+	cat <<\EOF
+Error: Staged files contain "TODO" lines!
+
+Please check your changes, or use git commit --no-verify to skip.
+EOF
+	exit 1
+fi
