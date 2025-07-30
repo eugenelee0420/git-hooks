@@ -11,24 +11,30 @@ fi
 # Redirect output to stderr.
 exec 1>&2
 
+error=0
+
 # Check whether staged changes contain lines with "DO NOT COMMIT"
-if test $(git diff --cached -z $against | grep 'DO NOT COMMIT' | wc -l) != 0
+# Check only lines that are added (or changed into) by filtering lines starting with +
+# which is not ideal because file headers begin with +++ but the color method is not reliable
+if test $(git diff --cached -z $against | grep -E '^\+' | grep 'DO NOT COMMIT' | wc -l) != 0
 then
 	cat <<\EOF
 Error: Staged files contain "DO NOT COMMIT" lines!
 
 Please check your changes, or use git commit --no-verify to skip.
 EOF
-	exit 1
+	error=1
 fi
 
 # Check whether staged changes contain lines with "TODO"
-if test $(git diff --cached -z $against | grep 'TODO' | wc -l) != 0
+if test $(git diff --cached -z $against | grep -E '^\+' | grep 'TODO' | wc -l) != 0
 then
 	cat <<\EOF
 Error: Staged files contain "TODO" lines!
 
 Please check your changes, or use git commit --no-verify to skip.
 EOF
-	exit 1
+	error=1
 fi
+
+exit $error
